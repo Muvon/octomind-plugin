@@ -28,7 +28,8 @@ octomind --version && octomind config --show
 
 - **Octomind account (default).** `octomind login` runs a browser device flow and stores `OCTOHUB_API_KEY` in
   `<data-dir>/config/.env`. The shipped config uses `octohub:auto` for the main, supervisor and compression models.
-  Headless machine: `octomind login --no-browser`. Replace a stored login: `octomind login --force`.
+  Headless machine: `octomind login --no-browser`. Replace a stored login: `octomind login --force`. Both block until the user
+  confirms in a browser and `--force` mints new credentials: tell the user to run them in their own terminal, never run them yourself.
 - **Own provider key.** Export the key (or put it in `.env`), then change `name` in all three profiles: `[model]`,
   `[supervisor.model]`, `[compression.model]`. Changing only `[model]` leaves the other two on OctoHub.
 - Model names are always `provider:model`. Common keys: `OPENAI_API_KEY` (`openai`), `ANTHROPIC_API_KEY` (`anthropic`),
@@ -37,8 +38,8 @@ octomind --version && octomind config --show
   both full endpoint paths. Full prefix table: providers doc.
 - `octomind config --api-key` is rejected: keys never go in config files. Load order, later wins: process environment,
   `<data-dir>/config/.env`, project `./.env`.
-- One run on another model: `octomind run -m 'anthropic:claude-sonnet-4-6'`. Precedence: runtime override > role
-  profile > `[taps]` mapping > `[model]`.
+- One run on another model: `printf '%s\n' 'Reply with OK.' | octomind run -m 'anthropic:claude-sonnet-4-6' --format plain`.
+  Precedence: runtime override > role profile > `[taps]` mapping > `[model]`.
 
 ## Config files
 
@@ -55,21 +56,23 @@ octomind --version && octomind config --show
   reasoning_effort = "high"
   ```
 - Existing configs are strict, not sparse overlays: required keys must exist somewhere in the merged files.
-- One-off override, nothing saved: `octomind run -c log_level=debug -c supervisor.enabled=false`.
+- One-off override, nothing saved: `printf '%s\n' 'Reply with OK.' | octomind run --format plain -c log_level=debug -c supervisor.enabled=false`.
 - Do not touch `version`. Root keys must sit before the first `[table]` header, or they land inside that table.
-- Setters that save to the config: `octomind config --model provider:model`, `--log-level none|info|debug`,
-  `--markdown-theme`, `--mcp-server "name,type=stdio,command=octofs"`. `--mcp-providers` REPLACES the whole server list.
+- Setters (`octomind config --model provider:model`, `--log-level none|info|debug`, `--markdown-theme`,
+  `--mcp-server "name,type=stdio,command=octofs"`) rewrite `config.toml` from the whole merged config: sibling files' values
+  get folded in, comments are lost, and a sibling file setting the same key still wins on the next load. Prefer editing a
+  sibling TOML file. `--mcp-providers` REPLACES the whole server list.
 
 ### Keys edited most
 
-| Where | Keys (shipped default) |
+| Where | Keys (default values) |
 |---|---|
 | root | `default = "assistant:concierge"` (tag for bare `run`), `sandbox = false`, `telemetry = true`, `log_level = "info"`, `auto_capabilities = true`, `max_session_tokens_threshold = 200000`, `max_session_spending_threshold = 0.0`, `max_request_spending_threshold = 0.0` (0 = no limit) |
 | `[model]` | `name`, `reasoning_effort = "medium"` (none, low, medium, high, xhigh, max), `max_tokens = 32768`, `temperature = 0.3`, `top_p = 0.7`, `top_k = 20`, `max_retries = 1`, `request_timeout_seconds = 300` |
 | `[supervisor]` | `enabled = true`; `[supervisor.model]` shared by gate, planning, learning; `[supervisor.gate]`, `[supervisor.plan]`, `[supervisor.learning]` each `enabled` |
 | `[compression]` | `threshold = 70000` (0 disables auto); `[compression.model]` |
-| `[taps]` | `"developer:general" = "ollama:glm-5.3"` (model name for one tap tag) |
-| `[registry]` | `cache_ttl_hours = 24` (tap manifest cache) |
+| `[taps]` | empty by default; each entry maps a tap tag to a model name, e.g. `"developer:general" = "ollama:glm-5.3"` (example, not a default) |
+| `[registry]` | `cache_ttl_hours = 24` (tap manifest cache; built-in default, absent from the shipped file) |
 | `[skills]` | `auto_activation = true`, `auto_validation = false` |
 
 Disable telemetry with `telemetry = false`, `OCTOMIND_TELEMETRY=0` or `DO_NOT_TRACK=1`.
@@ -78,22 +81,26 @@ Disable telemetry with `telemetry = false`, `OCTOMIND_TELEMETRY=0` or `DO_NOT_TR
 
 The optional argument of `octomind run` is a tag, not a message. A bare name (`assistant`) selects a local `[[roles]]` entry.
 A `category:variant` tag (`developer:general`) is resolved from taps. No tag: the `default` key.
-The shipped config has roles `assistant`, `task_refiner`, `task_researcher`, `reduce`. `octomind complete run` lists known tags.
+The shipped config has roles `assistant`, `task_refiner`, `task_researcher`, `reduce`. `octomind complete run` lists installed/cached
+tap tags and configured roles, not every tap agent.
 
-Custom role: save as `roles.toml` beside `config.toml`, then `octomind config --validate && octomind run helper`.
+Custom role: save as `roles.toml` beside `config.toml`, then `octomind config --validate`; try it with
+`printf '%s\n' 'Reply with OK.' | octomind run helper --format plain`.
 `system` and `welcome` are required; if `[roles.mcp]` exists it needs both lists.
 
 ```toml
 [[roles]]
 name = "helper"
-system = "You review code. Working directory: {{CWD}}"
-welcome = ""
+system = "You are helpful and knowledgeable assistant. Working directory: {{CWD}}"
+welcome = "Hello! Working in {{CWD}} (Role: {{ROLE}})"
 [roles.model]
 temperature = 0.3
 [roles.mcp]
 server_refs = ["core"]
-allowed_tools = ["core:*"]
+allowed_tools = ["core:recall"]
 ```
+`core` has no filesystem tools (they come from an external server such as `octofs`). For file access, register that server
+(see MCP servers) and add its name to `server_refs` and its tools to `allowed_tools`.
 
 Taps: `octomind tap` (list), `octomind tap myorg/my-agents` (clones `github.com/myorg/octomind-my-agents`),
 `octomind tap myorg/my-agents ./local-dir` (symlink), `octomind untap myorg/my-agents`,
@@ -132,18 +139,19 @@ Project scripts in `<workdir>/.agents/tools/` become tools automatically (`local
 ## Running
 
 ```bash
-octomind                                   # interactive, default tag
-octomind run developer:general -m 'openai:gpt-5.6-sol'
+printf '%s\n' 'Explain the auth module' | octomind run developer:general -m 'openai:gpt-5.6-sol' --format plain
 printf '%s\n' 'Add retry logic and update tests' | octomind run developer:general --format plain
 printf '%s\n' 'List TODOs in src/' | octomind run developer:general --format jsonl | jq -r 'select(.type=="assistant").content'
-octomind run --name feature-auth           # create, or resume if it exists
-octomind run --resume-recent               # latest session for this directory
+printf '%s\n' 'Continue the auth work' | octomind run --name feature-auth --format plain   # create, or resume if it exists
+printf '%s\n' 'Carry on' | octomind run --resume-recent --format plain                      # latest session for this directory
 ```
 
 - `run` has no message argument. Pipe the prompt on stdin. Piped stdin or any `--format` makes the run non-interactive
-  (`plain` or `jsonl` only); empty stdin fails with `No input provided via stdin`.
-- JSONL is an event stream, one object per line with a `type`: `assistant`, `thinking`, `tool_use`, `tool_result`, `cost`,
-  `status`, `error`. Take the final answer from the last `assistant` event; also check `error` events and the exit code.
+  (`plain` or `jsonl` only); empty stdin fails with `No input provided via stdin`. Claude's Bash tool has no TTY, so every run
+  must be piped. Bare `octomind`, `octomind run [tag]` without a pipe and `--resume` are for the user's own terminal.
+- JSONL is an event stream, one object per line with a `type`. Types include `assistant`, `thinking`, `tool_use`, `tool_result`,
+  `cost`, `status`, `error`, `mcp_notification`, `skill`, `evolution`, `injected`. Take the final answer from the last
+  `assistant` event; also check `error` events and the exit code.
 - Exit codes: `0` ok, `1` failed, `2` bad arguments, `75` stopped at a spending threshold (session saved, resumable).
 - `--sandbox` (or `sandbox = true`) restricts writes to the working directory for `run`, `server`, `acp` (Landlock on Linux,
   Seatbelt on macOS; Windows only warns).
@@ -154,16 +162,19 @@ octomind run --resume-recent               # latest session for this directory
 **Long or iterative work: daemon + send.** Run the daemon as a background shell command with a non-empty piped prompt:
 
 ```bash
-printf '%s\n' 'Implement the OAuth refresh flow' | octomind run developer:general --name oauth --daemon --format jsonl >oauth.jsonl 2>oauth.log
+printf '%s\n' 'Implement the OAuth refresh flow' | octomind run developer:general --name oauth --daemon --format jsonl >oauth.jsonl 2>oauth.log &
+oauth_pid=$!   # keep the pid for stopping it
 octomind send --name oauth "Now add error handling for token expiry"   # same user and host
 ```
 
 `send` only confirms the message was queued; read `oauth.jsonl` for the reply. It fails if the session is not running.
-`--daemon` does not detach; stop it with `kill -TERM <pid>` (exit 130).
+`--daemon` does not detach; stop it with `kill -TERM "$oauth_pid"` from the same shell (exit 130).
 
 **Workflows.** `octomind workflow my.toml` (or a tap workflow name; no argument lists them) runs multi-step TOML flows: sequential,
-`parallel`, `loop` with `exit_when`, `conditional`, and graph routing. Each `[[steps]]` has `name`, `role`, `prompt`
-(`{{input}}`, `{{<step name>}}`). Input comes from stdin; `--dry-run` prints the plan; stdout is empty unless `--format jsonl`.
+`parallel`, `loop` with `exit_when`, `conditional`, and graph routing. Top-level `name` is required. Only sequential steps carry
+`role` and `prompt` (`{{input}}`, `{{<step name>}}`); `parallel = true`, `loop = true` and `conditional = true` steps hold a `name`
+plus nested `[[steps.run]]` sequential entries (complete example: `usage/09-workflows`).
+Input comes from stdin; `--dry-run` prints the plan; stdout is empty unless `--format jsonl`.
 
 ## Pitfalls
 
@@ -191,7 +202,8 @@ printf '%s\n' 'Reply with OK.' | octomind run --format plain
 ```
 
 Success: the validate step passes and the reply arrives without a provider or credential error. On failure run
-`octomind config --show`, then `octomind login --force` (account) or re-check the provider key and the three model names.
+`octomind config --show`, then re-check the provider key and the three model names. For account auth, ask the user to run
+`octomind login` (or `--force`) in their own terminal; never run it yourself.
 
 ## Read more
 

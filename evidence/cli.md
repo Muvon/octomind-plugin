@@ -30,6 +30,7 @@ login is browser device flow, stores OCTOHUB_API_KEY in <data-dir>/config/.env |
 (same) key location | D/usage/01-installation.md:38-39 | "The completed login stores `OCTOHUB_API_KEY` in `<data-dir>/config/.env`"
 Default config uses octohub:auto for main, supervisor, compression | D/usage/01-installation.md:47-48 | "uses `octohub:auto` for its main, supervisor, and compression model purposes."
 login --no-browser / --force | D/reference/01-cli-reference.md:79 | "octomind login --force --no-browser"
+login blocks until browser confirmation; --force mints new credentials (user runs it, not Claude) | S/commands/login.rs:72-124 | "Confirm the code in your browser to finish signing in." ; "waiting…" ; "if !args.force {"
 Replace stored login with --force | D/usage/04-providers.md:205-208 | "force a new login to replace the machine's stored gateway credential:"
 BYOK: change name in all three profiles; main-only leaves others on OctoHub | D/usage/04-providers.md:74-75 | "change `name` in all three existing profiles while keeping their other settings. A main-model override alone leaves the shipped internal profiles on OctoHub"
 Model names must be provider:model | D/usage/03-configuration.md:121 | "Model names must use `provider:model`."
@@ -61,6 +62,8 @@ Required fields must exist collectively | D/reference/03-config-reference.md:51-
 Do not modify version | D/reference/03-config-reference.md:69 | "Config version. Do not modify. Used for automatic upgrades."
 Root keys before first table header | D/usage/03-configuration.md:57-58 | "Edit these existing keys before any TOML table header; do not append them beneath `[model]`."
 Setters: --model, --log-level, --markdown-theme, --mcp-server | D/reference/01-cli-reference.md:103-109 | "| `--model MODEL` | Set root-level model (`provider:model` format). |"
+Setters save by rewriting config.toml from the whole merged config (siblings folded in, comments lost) | S/config/loading.rs:441-461 ; S/commands/config.rs:364 | "let config_str = toml::to_string_pretty(self)" ; "if let Err(e) = config.save() {"
+Sibling file with same key still wins on next load (config.toml loads first, siblings later) | D/usage/03-configuration.md:194-196 | "`config.toml` loads first." ... "Tables merge recursively and later scalar values replace earlier ones."
 --mcp-providers replaces list | D/reference/01-cli-reference.md:105 | "**Replace** the MCP server list: clears all configured servers, then adds each named one as a `builtin` server"
 --mcp-server example | D/reference/01-cli-reference.md:158 | "octomind config --mcp-server \"files,type=stdio,command=octofs\""
 Stray *.toml in config dir merged | D/troubleshooting/01-common-issues.md:147-148 | "A stray `.toml` backup can therefore change the loaded settings."
@@ -77,8 +80,10 @@ supervisor enabled true | D/reference/03-config-reference.md:640 | "| `enabled` 
 supervisor.gate/plan/learning enabled flags | D/reference/03-config-reference.md:714,741,686 | "| `enabled` | bool | `true` | Enable the verify-gate |" ; "Enable adaptive external planning" ; "Enable the learning system (lessons + orientation)"
 compression threshold 70000, 0 disables | D/reference/03-config-reference.md:528 | "Baseline automatic compression trigger in tokens; `0` disables automatic checks"
 [compression.model] exists | D/reference/03-config-reference.md:566 | "### `[compression.model]`"
-[taps] tag -> model name | D/usage/03-configuration.md:232-233 | "[taps]\n\"developer:general\" = \"ollama:glm-5.3\""
-registry cache_ttl_hours 24 | D/reference/03-config-reference.md:834 | "| `cache_ttl_hours` | u64 | `24` | How long a fetched tap manifest is cached before re-checking. |"
+[taps] is empty in the shipped template; the entry is an example only | config-templates/default.toml:136-142 | "# Example:" / "# [taps]" / "# \"developer:general\" = \"ollama:glm-5\"" / "# Leave empty to use default model for all tap agents" / "[taps]"
+[taps] tag -> model name (doc example) | D/usage/03-configuration.md:232-233 | "[taps]\n\"developer:general\" = \"ollama:glm-5.3\""
+registry cache_ttl_hours 24 is a code default, not in the shipped template | D/reference/03-config-reference.md:834 ; S/config/registry.rs:17 | "| `cache_ttl_hours` | u64 | `24` | How long a fetched tap manifest is cached before re-checking. |"
+Shipped template values re-checked (default, sandbox, telemetry, log_level, auto_capabilities, thresholds, [model], [skills], [compression], [supervisor*]) | config-templates/default.toml:21-124,575-584,641-659,723-776 | "default = \"assistant:concierge\"" ; "threshold = 70000" ; "max_tokens = 32768"
 [skills] auto_activation true, auto_validation false | D/reference/03-config-reference.md:475-476 | "| `auto_activation` | bool | `true` |" ; "| `auto_validation` | bool | `false` |"
 Telemetry off switches | D/reference/04-environment-variables.md:235 | "turn it off with `DO_NOT_TRACK=1`, `OCTOMIND_TELEMETRY=0`, or `telemetry = false` in the config."
 
@@ -86,9 +91,11 @@ Telemetry off switches | D/reference/04-environment-variables.md:235 | "turn it 
 Tag semantics (role name / category:variant / omitted) | D/reference/01-cli-reference.md:58-60 | "A **role name** (e.g. `assistant`) — matched against `[[roles]]` in your config." ; "Omitted — uses the `default` tag from config."
 `run` positional is tag not message | D/usage/02-quickstart.md:108-109 | "The positional argument is the agent tag, so pipe the prompt through stdin"
 Shipped roles | D/usage/06-roles.md:28-31 | "Config role | `assistant`" / "`task_refiner`" / "`task_researcher`" / "`reduce`"
-octomind complete run lists tags | D/integration/04-tap-system.md:412-416 | "Discover tags installed on your machine with:" / "octomind complete run"
+octomind complete run lists installed/cached tap tags and configured roles, not every tap agent | D/reference/01-cli-reference.md:497,502 | "`complete` reads cached tap data" ; "`run` lists agent tags and configured roles"
 roles.toml beside config.toml; [[roles]] with name | D/usage/06-roles.md:50 | "Add this complete role entry in `roles.toml` alongside the generated `config.toml`."
 Role required fields; mcp needs both lists | D/usage/06-roles.md:82-88 | "| `mcp` | table | no | If present, include both `server_refs` and `allowed_tools`; if absent, both start empty |"
+Custom role example (core server, allowed_tools core:recall) | D/usage/06-roles.md:53-70 | "server_refs = [\"core\"]" ; "allowed_tools = [\"core:recall\"]"
+core has no filesystem tools; they come from an external server | D/usage/07-mcp-tools.md:35 | "Filesystem tools come from external servers such as `octofs`; they are not implemented by Octomind."
 welcome "" allowed | D/reference/03-config-reference.md:200 | "use `\"\"` for no banner"
 `core:*` pattern; server:* grants all tools | D/usage/06-roles.md:161 | "`\"server:*\"` — all tools from a server"
 {{CWD}} placeholder | D/usage/03-configuration.md:257 | "| `{{CWD}}` | Current working directory |"
@@ -131,9 +138,10 @@ jq filter on assistant events | D/usage/11-structured-output.md:77-78 | "| jq -r
 --name creates or resumes | D/reference/01-cli-reference.md:185 | "Create a named session, or resume it if it already exists."
 --resume-recent | D/reference/01-cli-reference.md:187 | "Resume the most recent session for the current directory"
 Piped stdin or --format = non-interactive; plain|jsonl only | D/reference/01-cli-reference.md:195-197 | "If `--format` is given (`plain` or `jsonl`) **or** stdin is piped, the session runs **non-interactively**"
+No TTY and no pipe: run goes non-interactive and fails on empty stdin (so Claude pipes every run) | S/commands/run.rs:73,77-81,171-182 | "let is_interactive_session = args.format.is_none() && std::io::stdin().is_terminal();" ; "anyhow::bail!(\"No input provided via stdin\");"
 Empty stdin error text | D/troubleshooting/01-common-issues.md:330 | "An empty pipe fails with `No input provided via stdin`."
 --format on TTY w/o pipe errors unless --daemon | D/troubleshooting/01-common-issues.md:330-331 | "With terminal stdin, `--format` requires piped input unless you also use `--daemon`."
-JSONL types | D/usage/11-structured-output.md:49-55 | "| `assistant` |" ... "| `thinking` |" "| `tool_use` |" "| `tool_result` |" "| `cost` |" "| `status` |" "| `error` |"
+JSONL types include assistant, thinking, tool_use, tool_result, cost, status, error, mcp_notification, skill, evolution, injected | D/usage/11-structured-output.md:47-59 | "| `mcp_notification` | Notification forwarded from an MCP server |" ; "| `injected` | A non-user message injected into the loop"
 JSONL is a stream, last assistant = final; check error events/exit status | D/usage/11-structured-output.md:81,88-89 | "collect the events and select the last" ; "Check the producer's exit status as well as any `error` events"
 Exit codes 0/1/2/75 | D/reference/01-cli-reference.md:534-537 | "| `75` | A non-interactive `run` stopped at a spending threshold"
 Exit 75 session saved/resumable | D/reference/01-cli-reference.md:537 | "The session is saved, so the run can be resumed (`EX_TEMPFAIL`)."
@@ -145,6 +153,7 @@ Resume without tag keeps role | D/reference/01-cli-reference.md:200 | "Resuming 
 Bare --resume needs TTY | D/reference/01-cli-reference.md:546 | "Supply a session name; the picker requires an interactive TTY."
 Daemon needs non-empty piped prompt | D/integration/03-daemon-and-hooks.md:25-26 | "provide a non-empty initial prompt. The process reads stdin to EOF before starting listeners"
 Daemon example with redirects | D/integration/03-daemon-and-hooks.md:30-31 | "octomind run --name ci-watcher --daemon --format jsonl >ci-watcher.jsonl 2>ci-watcher.log &"
+Daemon pid via & then $! | D/integration/03-daemon-and-hooks.md:30-32,38 | "ci_watcher_pid=$!" ; "kill -TERM \"$ci_watcher_pid\""
 send command | D/integration/03-daemon-and-hooks.md:68 | "octomind send --name ci-watcher \"Check the build status\""
 send acks queueing not completion | D/integration/03-daemon-and-hooks.md:74 | "A successful send acknowledges enqueueing, not AI completion; read the daemon output for the response."
 send fails if session not running | D/integration/03-daemon-and-hooks.md:76 | "If no session by that name is running, `send` fails immediately."
@@ -153,6 +162,7 @@ send same OS user / host runtime dir | D/integration/03-daemon-and-hooks.md:93 |
 workflow command, list with no arg | D/reference/01-cli-reference.md:434,460 | "Omit to list available tap workflows." ; "octomind workflow"
 Workflow modes: sequential/parallel/loop/conditional/graph | D/usage/09-workflows.md:3-4 | "This guide covers sequential, parallel, loop, conditional, and graph execution for CLI automation."
 Workflow step fields and {{input}}, {{step}} | D/usage/09-workflows.md:82-106 | "name    = \"spec\"" / "role    = \"developer:general\"" / "{{input}}" / "Security review of:\n{{spec}}"
+Top-level workflow name required; only sequential steps have role/prompt; parallel/loop/conditional steps hold name + nested run list | S/workflow/schema.rs:24-25,73-76,155-201 | "pub struct Sequential {" (name, role, prompt) ; "pub run: Vec<Sequential>," in ParallelStep, LoopStep, ConditionalStep
 loop exit_when | D/usage/09-workflows.md:116-118 | "loop           = true" / "exit_when      = { output = \"tester\", contains = \"NO ISSUES\" }"
 Workflow stdin required; --dry-run prints plan; stdout empty unless jsonl | D/usage/09-workflows.md:24-25 | "For structured stdout, use `--format jsonl`; without it, stdout is empty. `--dry-run` prints a plan without reading stdin or spawning steps."
 
@@ -173,4 +183,4 @@ Page https://octomind.run/docs/usage/03-configuration renders the config guide |
 Slugs used in the Read more table exist | https://octomind.run/docs/<slug> for each slug, e.g. usage/09-workflows, reference/02-session-commands | HTTP 200 (2026-10-27); slug = doc path without .md
 
 ## Doc-vs-code conflicts
-Config reference `version` default `22` in table vs 24 | D/reference/03-config-reference.md:69 vs :79 and S/config/mod.rs:77 | "pub const CURRENT_CONFIG_VERSION: u32 = 24;" (SKILL.md only says "do not touch version")
+Config `version`: template and code are 24; the config reference table row `22` (:69) is stale, its own example shows 24 (:79) | config-templates/default.toml:10 ; S/config/mod.rs:77 ; D/reference/03-config-reference.md:69,79 | "version = 24" ; "pub const CURRENT_CONFIG_VERSION: u32 = 24;" (SKILL.md only says "do not touch version")

@@ -17,7 +17,7 @@ An octo is an agent for one workstream: its own workspace directory on a machine
 | Does | control plane: octos, machines, conversations, routines, usage | model calls only (OpenAI-compatible) |
 | Env var | `OCTOMIND_API_KEY` | `OCTOHUB_API_KEY` |
 
-- Both go in `Authorization: Bearer <key>`.
+- Both go in `Authorization: Bearer <key>`. `OCTOMIND_API_KEY` is this skill's own naming convention, not a variable the API defines.
 - They are not interchangeable: the control plane rejects hub keys, and a developer key can never call the gateway.
 - Create them in the panel Keys page (`https://octomind.run/app/keys`). No developer key exists by default. With an existing developer key, `POST /account/keys` mints either: body `{"name":"ci","kind":"api"}` or `{"kind":"hub"}` (default `hub`). The plaintext is shown once.
 - A key is bound to its context: personal key = personal account, team-owned key = the team.
@@ -64,8 +64,9 @@ api -X POST $API/sessions/$SESSION_ID/message -d '{"text":"now add a regression 
 
 Details that matter:
 - `POST /machines/{machine_id}/sessions`: `octo_id` must be an octo of yours on THIS machine; without it the session belongs to the machine's first octo. `message` is optional (max 65536 chars). `role` defaults to the cloud orchestrator.
-- `POST /sessions/{id}/message` body: `text` (required), `wait_s` (1-120) long-polls and returns `{events, working, next}` when the turn completes; absent/0 returns `{accepted, working}` at once. Also `model` (run this turn on a hub model), `media_ids` (max 4), `request_id`.
-- History frames: `{events, working, next}`. A turn ends with a `cost`, `status` or `error` frame. `history` without `after` returns a reduced transcript page (`turns` 1-100, default 20; page older with `before`).
+- `POST /sessions/{id}/message` body: `text` (required), `wait_s` (1-120) long-polls and returns `{events, working, next}` when the turn completes or after `wait_s` seconds, whichever is first (on timeout `working` is `true`: keep polling from `next`); absent/0 returns `{accepted, working}` at once. Also `model` (run this turn on a hub model), `media_ids` (max 4), `request_id`.
+- History frames: `{events, working, next}`. Each event is `{id, at, dir, type, frame}`; `id` is the opaque cursor. The octo's reply text is in events with `type: "assistant"`, at `.frame.content`. A turn ends with a `cost`, `status` or `error` frame. `history` without `after` returns a reduced transcript page (`turns` 1-100, default 20; page older with `before`) that also carries `delegating`.
+- Delegation: the orchestrator may hand work to a specialist. That turn then ends with a `cost` frame whose payload has `pending_work: true`: a promise, not the answer, and `history?after=` already reads `working: false`. Keep polling (or stay on `events`) until a later `cost`, `status` or `error` frame arrives without `pending_work`; that one is final. With `wait_s`, `working` stays `true` while the delegated result is still being collected, so `false` there means final. The server stops waiting for a delegated result after 6 h.
 - Push instead of poll (works with `curl -N`, no WebSocket client needed):
   `api -N "$API/sessions/$SESSION_ID/events"` sends `id: <cursor>` + `data: <frame JSON>` events and a heartbeat every 25 s; resume with `?after=` or `Last-Event-ID`.
 - `GET /octos/{id}` shows `state`: `working`, `idle`, `asleep` (machine suspended), `blocked` (usage limit reached). `GET /octos/{id}/activity` lists its sessions and routine runs, 30 per page.
@@ -75,11 +76,11 @@ Details that matter:
 ## Busy sessions, retries, rate limits
 
 - One driver per session: a message while a turn is open returns `409 session_busy` (also for turns started from the panel). Do not blind-retry: poll `history` until `working` is false, or queue the message with `POST /sessions/{id}/queue` (`request_id` required, idempotent on it; it goes out when the session is free; max 20 queued/failed per session, else `409 queue_full`). Inspect with `GET /sessions/{id}/queue`.
-- Machines wake automatically on session create and on message; you do not manage machine state. `POST /machines/{id}/start` and `/stop` exist if you want to.
-- Send an `Idempotency-Key` header on every POST you may retry. A 2xx response is replayed for 24 h (same key and path); errors are not stored, so they re-execute.
+- Session create and message wake a suspended machine automatically; you do not manage machine state for them. `POST /machines/{id}/start` and `/stop` exist if you want to. Files endpoints do not wake it (below).
+- Send an `Idempotency-Key` header on every POST you may retry. A 2xx response is replayed for 24 h (same method, path and key; key up to 200 chars, stored response up to 1 MiB); errors are not stored, so they re-execute.
 - Rate limits are per developer key per minute, by plan (numbers: `.info.description` of the OpenAPI document). Every authenticated response has `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`. Over the limit: `429` with `Retry-After` (seconds) and body `["rate_limited", {"retry_after": n}]` - sleep that long, then retry.
 - Concurrent SSE streams are capped per plan; over the cap is also `429 rate_limited`.
-- Other named errors to handle: `402` (`subscription_required`, `account_blocked`, `member_capped`, `insufficient_usage`), `403 cloud_unavailable`, `409 limit_reached` (octo or machine caps), `422 model_not_available`, `422 invalid_octo`, `503 session_runtime_unavailable` / `provision_failed` / `no_capacity`. Do not retry 402/403/422; report them to the user.
+- Other named errors to handle: `402` (`subscription_required`, `account_blocked`, `member_capped`, `insufficient_usage`), `403 cloud_unavailable`, `409 limit_reached` (octo, machine or routine caps; on session create `limit` is `concurrent_sessions` with `retry_after_s`, so retry later), `409 machine_restoring` (archived machine being restored; retry later), `422 model_not_available`, `422 invalid_octo`, `503 session_runtime_unavailable` / `provision_failed` / `no_capacity`. Do not retry 402/403/422; report them to the user.
 
 ## Routines (scheduled or webhook runs)
 
@@ -90,9 +91,9 @@ Details that matter:
 
 ## Other control-plane groups (read the OpenAPI for fields)
 
-Machines (`/machines`, patch to rename/retime/grow disk; size is immutable); files (`/machines/{id}/files`: list, download up to 256 MB with `download=1`, upload up to 8 MB, delete); env vars (`/account/vars`, `/machines/{id}/vars`: values are masked on read, a `null` value deletes, machine vars apply on next start); `/images`; `/sessions` (all machines); account and spend (`/account`, `/account/usage`, `/account/usage/events|machines|models`, `/account/storage`); `/models` (live ids this key may use, with health `status`); `/plans`; `/teams*`.
+Machines (`/machines`, patch to rename/retime/grow disk; size is immutable); files (`/machines/{id}/files`: list, download up to 256 MB with `download=1`, upload up to 8 MB, delete; a suspended machine answers `409 not_running`, and only a download with `wake=1` wakes it); env vars (`/account/vars`, `/machines/{id}/vars`: values are masked on read, a `null` value deletes, machine vars apply on next start); `/images`; `/sessions` (all machines); account and spend (`/account`, `/account/usage`, `/account/usage/events|machines|models`, `/account/storage`); `/models` (the whole live roster of every kind, with health `status`; not filtered by plan or key); `/plans`; `/teams*`.
 
-Routes that exist in the API code and the cloud docs page but are NOT in the OpenAPI document: `POST /routines/{id}/run` (run now), `GET /routines/{id}/runs`, `POST /machines/{id}/media` (upload attachments, then pass the ids as `media_ids`). Treat them as unstable and tell the user.
+Among others, routes that exist in the API code and the cloud docs page but are NOT in the OpenAPI document: `POST /routines/{id}/run` (run now), `GET /routines/{id}/runs`, `POST /machines/{id}/media` (upload attachments, then pass the ids as `media_ids`). Treat them as unstable and tell the user.
 
 ## Hub: OpenAI-compatible model gateway
 
@@ -105,19 +106,19 @@ curl -sS https://hub.octomind.run/v1/chat/completions \
   -d '{"model":"deepseek-v4.1-flash","messages":[{"role":"user","content":"Explain Rust in one sentence."}]}'
 ```
 
-- Pick model ids from the public catalog, never from memory: `curl -s https://api.octomind.run/api/v1/catalog | jq '.[1] | keys'`. It is an envelope `[null, {models, embeddings, evaluations, media, services, included_paid, included_free}]`. Prices (`input_per_m`, `output_per_m`) and ids change; read them there. The catalog keeps retired models; skip any whose `deprecated_at` date has passed. `GET /v1/models` (hub) and `GET /models` (control plane) list only what the key may actually call.
+- Pick model ids from the public catalog, never from memory: `curl -s https://api.octomind.run/api/v1/catalog | jq '.[1] | keys'`. It is an envelope `[null, {models, embeddings, evaluations, media, services, included_paid, included_free}]`. Prices (`input_per_m`, `output_per_m`) and ids change; read them there. The catalog keeps retired models; skip any whose `deprecated_at` date has passed. Hub `GET /v1/models` lists only the ids the key's allow-list permits; control-plane `GET /models` lists the whole live roster (all kinds), so a listed id can still be refused with `422 model_not_available`.
 - `POST /v1/chat/completions` is classic OpenAI (point any OpenAI SDK at the base URL). `stream: true` is accepted but emulated: the upstream call finishes first, then it is re-framed as SSE, so first-token latency does not improve. `tool_choice` is accepted and ignored.
 - `POST /v1/completions` is octohub's native Responses API: `model`, `input` (string or items), `instructions`, `previous_completion_id` (pass the prior response `id` to continue a chain), `max_output_tokens`, `reasoning_effort`, `text.format` (`json_object` | `json_schema`), flat `tools`. Tool results go back as `function_call_output` input items.
 - `POST /v1/embeddings` `{model, input}` (string or array): the response body is the raw vector(s) with no envelope or usage. Embedding ids come from the catalog `embeddings` list.
 - Media (same key): `POST /v1/images/generations`, `/v1/videos`, `/v1/audio/speech`, `/v1/audio/transcriptions`, then `GET /v1/media/{id}`; `GET /v1/media/models` lists capabilities and price. `"wait": false` or a long job returns `202` with a job id to poll.
-- Errors: `401` missing/revoked key, `403` model not allowed for this key, `400` unknown model or bad request, `413` request body over 16 MiB (octohub 0.14.5+, rejected before any model call), `429` concurrency budget full, `503` no provider slot in time, `504` upstream timed out, `500` upstream failure. The hub does not retry upstream failures for you.
+- Errors: `401` missing/revoked key, `403` model not allowed for this key, `400` unknown model or bad request, `413` request body over 16 MiB (octohub 0.14.5+, rejected before any model call), `429` concurrency budget full, or every provider rate window exhausted (then with `Retry-After`), `503` no provider slot in time, `504` upstream timed out, `500` upstream failure. Providers may fail over to another lane server-side, but once that is exhausted the error reaches you: handle it and retry with backoff.
 - Hub concurrency is a per-account in-flight budget shared by all your keys. At the limit a request queues about 15 s, then returns `429`: lower parallelism and retry.
 
 ## What costs money
 
 State this to the user before launching large or unattended work.
 - Model tokens are metered per call at provider list price, whether made inside octos or through the hub with a key. Paid plans draw their allowance first, then prepaid credits; Free has no allowance and draws prepaid credits only.
-- Also metered: machine compute while it runs, a conversation activation fee for each new conversation, working disk above the included amount, shared storage above the plan allowance, and egress above the included amount. There is no per-request fee for the Developer API itself.
+- Also metered, one ledger `meter` each: `media_gen`, `web_search`, `browser_start`, `browser_minute`, `byok_request`, `voice_in`, `voice_out`, `cpu` and `ram` (machine compute while it runs), `activation` (each new conversation), `disk` (working disk above the included amount), `storage` (shared storage above the plan allowance), `network` (egress above the included amount). Hub media calls bill per unit produced, not per token. There is no per-request fee for the Developer API itself.
 - When neither allowance nor credits remain, model calls pause (octo `state` is `blocked`, calls return `402`); machines, files and history stay intact.
 - Check spend with `GET /account/usage` and `GET /account/usage/events`. Prices and plan limits drift: read `/catalog`, `/plans` and the OpenAPI text, do not quote numbers from memory.
 
