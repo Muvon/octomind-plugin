@@ -1,0 +1,14 @@
+{
+	"name": "octomind",
+	"displayName": "Octomind",
+	"version": "1.0.0",
+	"description": "Install, configure and run the Octomind CLI; drive Octomind Cloud through its Developer API and hub",
+	"author": {
+		"name": "Muvon Un Limited",
+		"url": "https://octomind.run"
+	},
+	"homepage": "https://octomind.run/docs",
+	"repository": "https://github.com/muvon/octomind-plugin",
+	"license": "Apache-2.0",
+	"keywords": ["octomind", "agents", "octohub", "llm-gateway"]
+}
