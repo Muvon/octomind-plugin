@@ -138,7 +138,7 @@ jq filter on assistant events | D/usage/11-structured-output.md:77-78 | "| jq -r
 --name creates or resumes | D/reference/01-cli-reference.md:185 | "Create a named session, or resume it if it already exists."
 --resume-recent | D/reference/01-cli-reference.md:187 | "Resume the most recent session for the current directory"
 Piped stdin or --format = non-interactive; plain|jsonl only | D/reference/01-cli-reference.md:195-197 | "If `--format` is given (`plain` or `jsonl`) **or** stdin is piped, the session runs **non-interactively**"
-No TTY and no pipe: run goes non-interactive and fails on empty stdin (so Claude pipes every run) | S/commands/run.rs:73,77-81,171-182 | "let is_interactive_session = args.format.is_none() && std::io::stdin().is_terminal();" ; "anyhow::bail!(\"No input provided via stdin\");"
+No TTY and no pipe: run goes non-interactive and fails on empty stdin (so agent shell tools pipe every run) | S/commands/run.rs:73,77-81,171-182 | "let is_interactive_session = args.format.is_none() && std::io::stdin().is_terminal();" ; "anyhow::bail!(\"No input provided via stdin\");"
 Empty stdin error text | D/troubleshooting/01-common-issues.md:330 | "An empty pipe fails with `No input provided via stdin`."
 --format on TTY w/o pipe errors unless --daemon | D/troubleshooting/01-common-issues.md:330-331 | "With terminal stdin, `--format` requires piped input unless you also use `--daemon`."
 JSONL types include assistant, thinking, tool_use, tool_result, cost, status, error, mcp_notification, skill, evolution, injected | D/usage/11-structured-output.md:47-59 | "| `mcp_notification` | Notification forwarded from an MCP server |" ; "| `injected` | A non-user message injected into the loop"

@@ -2,7 +2,7 @@
 name: cli
 description: Install, configure and operate the open-source Octomind CLI coding agent. Use when the user asks to install or sign in to Octomind, edit its config.toml, pick a model or provider, add MCP servers, roles or taps, run Octomind agents headless (piped, JSONL, named or daemon sessions, sandbox), or troubleshoot a failing Octomind setup. Does not cover Octomind Cloud beyond `octomind login`.
 license: Apache-2.0
-compatibility: Needs the octomind binary (Linux, macOS, Windows), network access, and model access via `octomind login` or a provider API key. Commands are written for Claude Code's Bash tool.
+compatibility: Needs the octomind binary (Linux, macOS, Windows), network access, and model access via `octomind login` or a provider API key. Shell examples use Bash syntax unless marked as PowerShell.
 ---
 
 # Octomind CLI
@@ -147,8 +147,8 @@ printf '%s\n' 'Carry on' | octomind run --resume-recent --format plain          
 ```
 
 - `run` has no message argument. Pipe the prompt on stdin. Piped stdin or any `--format` makes the run non-interactive
-  (`plain` or `jsonl` only); empty stdin fails with `No input provided via stdin`. Claude's Bash tool has no TTY, so every run
-  must be piped. Bare `octomind`, `octomind run [tag]` without a pipe and `--resume` are for the user's own terminal.
+  (`plain` or `jsonl` only); empty stdin fails with `No input provided via stdin`. Always pipe prompts when running through
+  an agent's shell tool. Bare `octomind`, `octomind run [tag]` without a pipe and `--resume` are for the user's own terminal.
 - JSONL is an event stream, one object per line with a `type`. Types include `assistant`, `thinking`, `tool_use`, `tool_result`,
   `cost`, `status`, `error`, `mcp_notification`, `skill`, `evolution`, `injected`. Take the final answer from the last
   `assistant` event; also check `error` events and the exit code.

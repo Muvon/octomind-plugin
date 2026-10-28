@@ -1,6 +1,6 @@
 {
 	"name": "octomind",
-	"description": "Skills that teach Claude to set up and run Octomind: the open-source agent CLI and Octomind Cloud",
+	"description": "Skills that teach Claude Code and Codex to set up and run Octomind: the open-source agent CLI and Octomind Cloud",
 	"owner": {
 		"name": "Muvon Un Limited",
 		"url": "https://octomind.run"
