@@ -1,10 +1,14 @@
 # Octomind plugin for Claude Code and Codex
 
-Two shared skills that teach Claude Code and Codex to set up and run [Octomind](https://octomind.run):
+Three shared skills that teach Claude Code and Codex to set up, extend and run [Octomind](https://octomind.run):
 
-- `octomind:cli` — install, configure (`config.toml`, roles, taps, MCP servers) and run the open-source Octomind CLI.
+- `octomind:cli` — install, sign in, pick a model and run the open-source Octomind CLI, and diagnose a failing setup.
+- `octomind:customize` — add or change Octomind commands, roles, MCP servers, guardrails, skills, local tools, workflows, webhooks and taps, and tune its settings.
+  Each kind of extension has its own reference file that loads only when needed.
 - `octomind:cloud` — drive Octomind Cloud from outside: the Developer API (octos, conversations, routines) and the
   OpenAI-compatible hub.
+
+Each skill fires only when the request is about Octomind, so a request to add a Claude Code slash command or hook leaves them alone.
 
 ## Install
 
@@ -24,7 +28,7 @@ codex plugin marketplace add muvon/octomind-plugin
 codex plugin add octomind@octomind
 ```
 
-Open `/plugins` inside Codex to manage plugins. Invoke the skills with `$octomind:cli` or `$octomind:cloud`.
+Open `/plugins` inside Codex to manage plugins. Invoke the skills with `$octomind:cli`, `$octomind:customize` or `$octomind:cloud`.
 
 For local development, run `codex plugin marketplace add .` from this checkout instead of adding the GitHub repository.
 Codex [supports the existing Claude-compatible marketplace](https://learn.chatgpt.com/docs/enterprise/plugin-management#supported-formats)
@@ -43,6 +47,6 @@ export OCTOHUB_API_KEY=...       # hub (hub.octomind.run/v1)
 
 ## Keeping it true
 
-Every claim in a skill is traced to a source (`claim | path:line or URL | quote`); the CLI skill's table is
-`evidence/cli.md`. Change a claim, change its row. The Octomind and octohub repos remind contributors in their AGENTS.md
+Every claim in a skill is traced to a source (`claim | path:line or URL | quote`). The CLI skill's table is `evidence/cli.md`; the customize skill's tables are in `evidence/customize/`, one file per reference.
+Change a claim, change its row. The Octomind and octohub repos remind contributors in their AGENTS.md
 to update these skills when a CLI flag, config key, public route or hub behaviour changes.

@@ -1,6 +1,6 @@
 # Evidence for skills/cli/SKILL.md
 
-`D` = `doc/` and `S` = `src/` in https://github.com/muvon/octomind (branch `master`); line numbers as of 2026-10-27.
+`D` = `doc/` and `S` = `src/` in https://github.com/muvon/octomind (branch `master`); line numbers as of 2026-10-27, except the "Config load and writers" and "Other commands" sections (2026-11-08, Octomind 0.70.0).
 Docs branch: `master` (raw files resolve at https://raw.githubusercontent.com/muvon/octomind/master/doc/..., HTTP 200 on 2026-10-27).
 
 claim | source | verbatim quote
@@ -62,51 +62,28 @@ Required fields must exist collectively | D/reference/03-config-reference.md:51-
 Do not modify version | D/reference/03-config-reference.md:69 | "Config version. Do not modify. Used for automatic upgrades."
 Root keys before first table header | D/usage/03-configuration.md:57-58 | "Edit these existing keys before any TOML table header; do not append them beneath `[model]`."
 Setters: --model, --log-level, --markdown-theme, --mcp-server | D/reference/01-cli-reference.md:103-109 | "| `--model MODEL` | Set root-level model (`provider:model` format). |"
-Setters save by rewriting config.toml from the whole merged config (siblings folded in, comments lost) | S/config/loading.rs:441-461 ; S/commands/config.rs:364 | "let config_str = toml::to_string_pretty(self)" ; "if let Err(e) = config.save() {"
+Setters save by rewriting config.toml from the whole merged config (siblings folded in, comments lost) | S/config/loading.rs:443-463 ; S/commands/config.rs:370 | "let config_str = toml::to_string_pretty(self)" ; "if let Err(e) = config.save() {"
 Sibling file with same key still wins on next load (config.toml loads first, siblings later) | D/usage/03-configuration.md:194-196 | "`config.toml` loads first." ... "Tables merge recursively and later scalar values replace earlier ones."
 --mcp-providers replaces list | D/reference/01-cli-reference.md:105 | "**Replace** the MCP server list: clears all configured servers, then adds each named one as a `builtin` server"
---mcp-server example | D/reference/01-cli-reference.md:158 | "octomind config --mcp-server \"files,type=stdio,command=octofs\""
+Mutating flags apply changes then save | D/reference/01-cli-reference.md:126 | "**Mutating flags** (apply changes, then save to the loaded config path):"
 Stray *.toml in config dir merged | D/troubleshooting/01-common-issues.md:147-148 | "A stray `.toml` backup can therefore change the loaded settings."
 
-## Keys table
+## Model settings
 default = "assistant:concierge" is tag for bare run | D/reference/03-config-reference.md:71 | "Default tag for bare `run`, `acp`, and `server`."
-Root defaults: sandbox false, telemetry true, log_level info | D/usage/03-configuration.md:62-65 | "log_level = \"info\"" / "sandbox = false" / "telemetry = true"
-auto_capabilities default true | D/reference/03-config-reference.md:123 | "| `auto_capabilities` | bool | `true` | Enable automatic capability activation on user messages."
-max_session_tokens_threshold 200000 | D/reference/03-config-reference.md:92 | "| `max_session_tokens_threshold` | usize | `200000` |"
-Spending thresholds default 0.0 = no limit | D/reference/03-config-reference.md:109-110 | "`0.0` = no limit." (max_session_spending_threshold, max_request_spending_threshold)
 [model] fields and defaults | D/reference/03-config-reference.md:137-145 | "| `reasoning_effort` | enum | `\"medium\"` | `\"none\"`, `\"low\"`, `\"medium\"`, `\"high\"`, `\"xhigh\"`, or `\"max\"`." (max_tokens 32768, temperature 0.3, top_p 0.7, top_k 20, max_retries 1, request_timeout_seconds 300)
-supervisor enabled true | D/reference/03-config-reference.md:640 | "| `enabled` | bool | `true` | Master switch for the whole control plane |"
-[supervisor.model] shared by gate, plan, etc.; learning uses it | D/reference/03-config-reference.md:645-646 | "Optional partial profile shared by every supervisor mechanic: authorizer, gate, resolve, plan, condense, extraction, recall,"
-supervisor.gate/plan/learning enabled flags | D/reference/03-config-reference.md:714,741,686 | "| `enabled` | bool | `true` | Enable the verify-gate |" ; "Enable adaptive external planning" ; "Enable the learning system (lessons + orientation)"
-compression threshold 70000, 0 disables | D/reference/03-config-reference.md:528 | "Baseline automatic compression trigger in tokens; `0` disables automatic checks"
-[compression.model] exists | D/reference/03-config-reference.md:566 | "### `[compression.model]`"
-[taps] is empty in the shipped template; the entry is an example only | config-templates/default.toml:136-142 | "# Example:" / "# [taps]" / "# \"developer:general\" = \"ollama:glm-5\"" / "# Leave empty to use default model for all tap agents" / "[taps]"
-[taps] tag -> model name (doc example) | D/usage/03-configuration.md:232-233 | "[taps]\n\"developer:general\" = \"ollama:glm-5.3\""
-registry cache_ttl_hours 24 is a code default, not in the shipped template | D/reference/03-config-reference.md:834 ; S/config/registry.rs:17 | "| `cache_ttl_hours` | u64 | `24` | How long a fetched tap manifest is cached before re-checking. |"
-Shipped template values re-checked (default, sandbox, telemetry, log_level, auto_capabilities, thresholds, [model], [skills], [compression], [supervisor*]) | config-templates/default.toml:21-124,575-584,641-659,723-776 | "default = \"assistant:concierge\"" ; "threshold = 70000" ; "max_tokens = 32768"
-[skills] auto_activation true, auto_validation false | D/reference/03-config-reference.md:475-476 | "| `auto_activation` | bool | `true` |" ; "| `auto_validation` | bool | `false` |"
+request_timeout_seconds, stream_timeout_seconds, request_transport | config-templates/default.toml:124-129 | "# Total deadline for one HTTP or WebSocket request attempt; 0 disables it." ; "# SSE/WebSocket response inactivity limit; 0 disables it." ; "# Persistent WebSocket for octohub/chatgpt requests (\"http\" opts out); other providers ignore it."
 Telemetry off switches | D/reference/04-environment-variables.md:235 | "turn it off with `DO_NOT_TRACK=1`, `OCTOMIND_TELEMETRY=0`, or `telemetry = false` in the config."
 
-## Roles, tags, taps
+## Tags and taps
 Tag semantics (role name / category:variant / omitted) | D/reference/01-cli-reference.md:58-60 | "A **role name** (e.g. `assistant`) — matched against `[[roles]]` in your config." ; "Omitted — uses the `default` tag from config."
 `run` positional is tag not message | D/usage/02-quickstart.md:108-109 | "The positional argument is the agent tag, so pipe the prompt through stdin"
 Shipped roles | D/usage/06-roles.md:28-31 | "Config role | `assistant`" / "`task_refiner`" / "`task_researcher`" / "`reduce`"
 octomind complete run lists installed/cached tap tags and configured roles, not every tap agent | D/reference/01-cli-reference.md:497,502 | "`complete` reads cached tap data" ; "`run` lists agent tags and configured roles"
-roles.toml beside config.toml; [[roles]] with name | D/usage/06-roles.md:50 | "Add this complete role entry in `roles.toml` alongside the generated `config.toml`."
-Role required fields; mcp needs both lists | D/usage/06-roles.md:82-88 | "| `mcp` | table | no | If present, include both `server_refs` and `allowed_tools`; if absent, both start empty |"
-Custom role example (core server, allowed_tools core:recall) | D/usage/06-roles.md:53-70 | "server_refs = [\"core\"]" ; "allowed_tools = [\"core:recall\"]"
-core has no filesystem tools; they come from an external server | D/usage/07-mcp-tools.md:35 | "Filesystem tools come from external servers such as `octofs`; they are not implemented by Octomind."
-welcome "" allowed | D/reference/03-config-reference.md:200 | "use `\"\"` for no banner"
-`core:*` pattern; server:* grants all tools | D/usage/06-roles.md:161 | "`\"server:*\"` — all tools from a server"
-{{CWD}} placeholder | D/usage/03-configuration.md:257 | "| `{{CWD}}` | Current working directory |"
-Role example validate + run | D/usage/06-roles.md:73-74 | "octomind config --validate" / "octomind run helper"
 Unknown plain role names rejected | D/usage/06-roles.md:335 | "> **Unknown plain role names are rejected.**"
 Local role must not share tap tag name | D/usage/06-roles.md:331-333 | "Use a unique plain name for a local customization; a local `developer`"
 tap list/add/local symlink | D/reference/01-cli-reference.md:302-308 | "octomind tap" / "octomind tap myorg/my-tap" / "octomind tap myorg/my-tap /path/to/local/tap"
 tap myorg/x clones octomind-x repo | D/troubleshooting/01-common-issues.md:271 | "octomind tap myorg/my-agents     # clones github.com/myorg/octomind-my-agents"
 untap | D/reference/01-cli-reference.md:344 | "octomind untap myorg/my-tap"
-tap init scaffolds, validates, git init, registers | D/reference/01-cli-reference.md:313-315 | "Renders the template, validates it, runs `git init`, and registers the directory as a local tap"
-tap init example | D/reference/01-cli-reference.md:327 | "octomind tap init acme/team --agent team:assistant"
 muvon/tap always present, last, cannot be added/removed | D/integration/04-tap-system.md:69-70 | "always present as the **last-priority fallback**" ; "cannot be added (`tap muvon/tap` is rejected) or removed"
 First-listed tap wins | D/integration/04-tap-system.md:79-80 | "the **first-listed tap wins**"
 First use fetches manifest and deps | D/usage/02-quickstart.md:22-23 | "The first use of a tap agent fetches its manifest and dependencies, so it requires network access."
@@ -115,20 +92,7 @@ Manifest cache can hide edits; cache path | D/integration/04-tap-system.md:551-5
 /role can overwrite /model | D/usage/06-roles.md:320-321 | "The profile application can replace an earlier `/model` or `/effort` choice"
 
 ## MCP
-Four builtin servers declared | D/usage/03-configuration.md:143 | "The default registry declares four built-in MCP servers:"
-Names core, orchestration, runtime, agent | D/usage/03-configuration.md:146-149 | "| `core` |" / "| `orchestration` |" / "| `runtime` |" / "| `agent` |"
-filesystem is external (octofs), not builtin | D/usage/07-mcp-tools.md:35 | "Filesystem tools come from external servers such as `octofs`; they are not implemented by Octomind."
-External servers are http or stdio | D/usage/03-configuration.md:152 | "External servers use `http` or `stdio`."
-Save definition as mcp-project.toml in config dir | D/usage/03-configuration.md:160 | "Save this definition as `mcp-project.toml` in the config directory:"
-stdio example fields (command {{ENV}}, args, timeout, tools, auto_bind) | D/usage/03-configuration.md:162-171 | "command = \"{{ENV:PROJECT_MCP_COMMAND}}\"" / "auto_bind = [\"developer:general\"]"
-http example with Authorization header | D/usage/07-mcp-tools.md:51-58 | "headers = { Authorization = \"Bearer {{ENV:CUSTOM_API_TOKEN}}\" }  # optional"
-Registration doesn't enable; use auto_bind or server_refs | D/usage/03-configuration.md:184-185 | "Registration alone does not enable a server; use `auto_bind` or a role's `server_refs`."
-auto_bind exact match | D/usage/03-configuration.md:183 | "`auto_bind` matches exact role strings: `developer` does not match `developer:general`."
-tools = [] means all | D/reference/03-config-reference.md:277 | "Tool filter. Empty = all tools."
-timeout_seconds 1-3600 | D/reference/03-config-reference.md:299 | "Timeouts must be 1–3600 seconds."
-Unset {{ENV}} server cannot connect | D/usage/07-mcp-tools.md:60-62 | "a server whose placeholders reference unset or empty env vars cannot connect and is logged as a startup error."
 /mcp list, full, health | D/troubleshooting/01-common-issues.md:218-220 | "| `/mcp list` | Tool names |" / "| `/mcp full` | Tool details and schemas |" / "| `/mcp health` | Server health checks |"
-.agents/tools scripts auto-discovered as `local` server | D/usage/07-mcp-tools.md:33 | "Project-local shebang-script tools auto-discovered from `<workdir>/.agents/tools/`."
 MCP elicitation declined in piped / --format runs | D/usage/07-mcp-tools.md:107-108 | "The question is **declined** without asking anyone when nobody can answer: piped and `--format` runs"
 
 ## Running
@@ -143,7 +107,7 @@ Empty stdin error text | D/troubleshooting/01-common-issues.md:330 | "An empty p
 --format on TTY w/o pipe errors unless --daemon | D/troubleshooting/01-common-issues.md:330-331 | "With terminal stdin, `--format` requires piped input unless you also use `--daemon`."
 JSONL types include assistant, thinking, tool_use, tool_result, cost, status, error, mcp_notification, skill, evolution, injected | D/usage/11-structured-output.md:47-59 | "| `mcp_notification` | Notification forwarded from an MCP server |" ; "| `injected` | A non-user message injected into the loop"
 JSONL is a stream, last assistant = final; check error events/exit status | D/usage/11-structured-output.md:81,88-89 | "collect the events and select the last" ; "Check the producer's exit status as well as any `error` events"
-Exit codes 0/1/2/75 | D/reference/01-cli-reference.md:534-537 | "| `75` | A non-interactive `run` stopped at a spending threshold"
+Exit codes 0/1/2/75/130 | D/reference/01-cli-reference.md:561-565 | "| `130` | A `run` session was force-stopped: a second Ctrl+C, or SIGTERM on Unix."
 Exit 75 session saved/resumable | D/reference/01-cli-reference.md:537 | "The session is saved, so the run can be resumed (`EX_TEMPFAIL`)."
 Sandbox scope + Landlock/Seatbelt | D/reference/01-cli-reference.md:521-523 | "restricts writes with Landlock on Linux or Seatbelt on macOS" ; "applies only to `run`, `server`, and `acp`"
 Sandbox config key or flag | D/reference/01-cli-reference.md:522 | "active if **either** the config `sandbox` setting **or** the `--sandbox` flag is set"
@@ -160,11 +124,7 @@ send fails if session not running | D/integration/03-daemon-and-hooks.md:76 | "I
 send same OS user / host runtime dir | D/integration/03-daemon-and-hooks.md:93 | "Run the sender as the same OS user with the same runtime environment."
 --daemon doesn't detach; stop with kill -TERM; exit 130 | D/integration/03-daemon-and-hooks.md:27,38,41 | "does not detach it from your terminal" ; "kill -TERM \"$ci_watcher_pid\"" ; "exits with status 130"
 workflow command, list with no arg | D/reference/01-cli-reference.md:434,460 | "Omit to list available tap workflows." ; "octomind workflow"
-Workflow modes: sequential/parallel/loop/conditional/graph | D/usage/09-workflows.md:3-4 | "This guide covers sequential, parallel, loop, conditional, and graph execution for CLI automation."
-Workflow step fields and {{input}}, {{step}} | D/usage/09-workflows.md:82-106 | "name    = \"spec\"" / "role    = \"developer:general\"" / "{{input}}" / "Security review of:\n{{spec}}"
-Top-level workflow name required; only sequential steps have role/prompt; parallel/loop/conditional steps hold name + nested run list | S/workflow/schema.rs:24-25,73-76,155-201 | "pub struct Sequential {" (name, role, prompt) ; "pub run: Vec<Sequential>," in ParallelStep, LoopStep, ConditionalStep
-loop exit_when | D/usage/09-workflows.md:116-118 | "loop           = true" / "exit_when      = { output = \"tester\", contains = \"NO ISSUES\" }"
-Workflow stdin required; --dry-run prints plan; stdout empty unless jsonl | D/usage/09-workflows.md:24-25 | "For structured stdout, use `--format jsonl`; without it, stdout is empty. `--dry-run` prints a plan without reading stdin or spawning steps."
+Workflow stdin required; --dry-run prints plan to stdout; stdout otherwise empty unless jsonl | D/usage/09-workflows.md:24-25 ; S/commands/workflow.rs:50-51 | "`--dry-run` prints a plan without reading stdin or spawning steps." ; "Without it, stdout is empty" ; "(except the `--dry-run` plan)"
 
 ## Pitfalls (additional)
 .env overrides exported variables; project beats user | D/reference/04-environment-variables.md:35-36 | "**`.env` overrides the system environment.**" ; "**Project-local `.env` overrides user-scope `.env`.**"
@@ -182,5 +142,34 @@ Raw GitHub path doc/<path> | https://raw.githubusercontent.com/muvon/octomind/ma
 Page https://octomind.run/docs/usage/03-configuration renders the config guide | WebFetch 2026-10-27 | "Configuration: Models, Roles, and MCP Config in TOML."
 Slugs used in the Read more table exist | https://octomind.run/docs/<slug> for each slug, e.g. usage/09-workflows, reference/02-session-commands | HTTP 200 (2026-10-27); slug = doc path without .md
 
-## Doc-vs-code conflicts
-Config `version`: template and code are 24; the config reference table row `22` (:69) is stale, its own example shows 24 (:79) | config-templates/default.toml:10 ; S/config/mod.rs:77 ; D/reference/03-config-reference.md:69,79 | "version = 24" ; "pub const CURRENT_CONFIG_VERSION: u32 = 24;" (SKILL.md only says "do not touch version")
+## Config load and writers
+No per-project config: only the config directory is read | S/config/loading.rs:355-364,414 | "let mut merged_value = load_and_merge_toml_from_directory(config_dir)?;"
+`.agents/` holds guardrails, tools and skills | evidence/customize/guardrails.md ; evidence/customize/local-tools.md ; evidence/customize/octomind-skills.md | see those rows
+Loading may create or migrate before any command runs | D/reference/01-cli-reference.md:124 | "Loading happens before command dispatch and may create or migrate config even with `--show` or `--validate`."
+Default template written when no config exists | S/config/loading.rs:373-375,400-402 | "// No config files at all, inject default"
+Older config.toml migrated on load, with backup path on stderr | S/config/loading.rs:407-411 ; S/config/migrations.rs:811-820,858-863 | "// Check for automatic config upgrades on config.toml" ; "Config upgraded successfully! Backup saved to: {}"
+-c runs skip migration; a missing config.toml is not migrated | S/config/loading.rs:408 | "if overrides.is_empty() && config_path.exists() {"
+Only config.toml is migrated, siblings are not | S/config/loading.rs:409 | "super::migrations::check_and_upgrade_config(&config_path)"
+Missing keys are not filled from the template | S/config/loading.rs:421,439-440 | "Failed to parse merged TOML configuration. All required fields must be present." ; "REMOVED: No more default_with_env - config must be complete and explicit"
+Unknown keys are captured; only config --validate reports them | S/config/validation.rs:324-329 ; S/commands/config.rs:95 | "pub fn deserialize_with_ignored_keys" ; "let ignored_reports = config.check_ignored_keys();"
+-c dotted path must already exist | S/config/loading.rs:273-275 | "Unknown config override path '{path}'"
+-c rejected on config and configure | S/main.rs:159-160 | "--config overrides cannot be used with the config or configure subcommands"
+configure changes only three model names, keeps comments, keys in .env | D/reference/01-cli-reference.md:83-85 | "comments and other settings are preserved." ; "Credentials go into the user-scope"
+configure needs a terminal on stdin and stdout | S/commands/configure.rs:69-70 | "octomind configure requires an interactive terminal"
+login writes hub key to .env and session to auth.json | S/account.rs:358-362 | "Persist a confirmed login: hub key into the user-scope `.env`, panel session"
+/model is session-only | S/session/chat/session/commands/model.rs:53 | "// The selection belongs to this session, not the shared configuration."
+Runtime persist writes mcp-<name>.toml | S/mcp/runtime/dynamic.rs:524 | "Writes `<config_dir>/mcp-<name>.toml` with `[[mcp.servers]]` format"
+Taps stored in data dir taps.toml | S/agent/taps.rs:131 | "Ok(crate::directories::get_octomind_data_dir()?.join(\"taps.toml\"))"
+
+## Other commands
+evaluate input, -m and [decision].model | S/commands/evaluate.rs:31-39,54-56 | "JSON request file: `{\"state\": ..., \"questions\": {\"id\": {\"type\": \"noul\", \"instructions\": \"...\"}}}`." ; "decision.model is absent or empty; pass --model"
+vars flags | D/reference/01-cli-reference.md:380-381 | "| `--preview` | `-p` |" ; "| `--expand` | `-e` |"
+server flags and defaults | D/reference/01-cli-reference.md:279-280 | "Bind address (default: `127.0.0.1`)" ; "Port (default: `8080`)"
+server has no TLS; token optional | D/integration/01-websocket-server.md:48,862 | "unset = no authentication" ; "The server has no TLS."
+acp flags | S/commands/acp.rs:22-51 | "#[arg(long = \"hook\", value_name = \"NAME\")]"
+completion shells | D/reference/01-cli-reference.md:499 | "Target shell: `bash`, `zsh`, `fish`, `powershell`, `elvish`"
+
+
+## Shared local inference
+Hindsight model sharing, idle lifetime and hidden helper | S/supervisor/hindsight/shared.rs; S/main.rs; D/reference/03-config-reference.md | "Hindsight inference is shared across Octomind processes using the same runtime directory." ; "The worker exits after 15 minutes without clients."
+Advise is opt-in, fires only on loop/recovery alarms, one in four is a plain-note control, and each note is logged to advise.jsonl | S/supervisor/advise.rs; D/reference/03-config-reference.md | "One in four eligible alarms is a control that gets the plain note." ; "Every alarm is appended to `advise.jsonl` in the data directory"

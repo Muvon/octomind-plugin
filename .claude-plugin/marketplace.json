@@ -9,7 +9,7 @@
 		{
 			"name": "octomind",
 			"source": "./plugins/octomind",
-			"description": "Install, configure and run the Octomind CLI; drive Octomind Cloud through its Developer API and hub"
+			"description": "Install, run and customize the Octomind CLI; drive Octomind Cloud through its Developer API and hub"
 		}
 	]
 }

@@ -1,8 +1,8 @@
 {
 	"name": "octomind",
 	"displayName": "Octomind",
-	"version": "1.0.0",
-	"description": "Install, configure and run the Octomind CLI; drive Octomind Cloud through its Developer API and hub",
+	"version": "1.1.0",
+	"description": "Install, run and customize the Octomind CLI; drive Octomind Cloud through its Developer API and hub",
 	"author": {
 		"name": "Muvon Un Limited",
 		"url": "https://octomind.run"
