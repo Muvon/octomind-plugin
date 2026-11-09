@@ -82,9 +82,8 @@ auto_activation switch | S/mcp/runtime/skill_auto.rs:392 | "if !skills_config.au
 Semantic margin | S/mcp/runtime/skill_auto.rs:551 | "if top1 - top2 >= super::skill::SEMANTIC_MARGIN {"
 Semantic default threshold in code | S/mcp/runtime/skill.rs:73 | "pub const SEMANTIC_DEFAULT_THRESHOLD: f32 = 0.65;"
 Semantic needs embedding model | D/usage/15-skills.md:208 | "`semantic` checks evaluate to `false` when the embedding model isn't ready."
-file next to semantic does not bypass margin | D/usage/15-skills.md:207 | "a semantic group does not bypass it."
+file next to semantic does not bypass margin | D/usage/15-skills.md:208 | "a semantic group does not bypass it."
 Pool built at session start, not live | S/mcp/runtime/skill_auto.rs:161 | "pub fn init_pool(domain: &str) {"
-Restart after adding a skill | D/usage/15-skills.md:368 | "eight non-whitespace characters. Use `/skill project-review` to test manual loading independently."
 Restart after adding skill (text) | D/usage/15-skills.md:368 | "directory, and its domains contain the role base or `*`. Restart after adding a skill, and send a request with at least"
 Pool rebuild on /done inside learning block | S/session/chat/session/commands/done.rs:89 | "if config.supervisor.learning.enabled {"
 
@@ -140,13 +139,12 @@ auto_validation off by default | S/../config-templates/default.toml:589 | "auto_
 Generated config has the table | B/octomind config --validate (fresh OCTOMIND_CONFIG_PATH), generated file:399-404 | "[skills]\nauto_activation = true\nauto_validation = false\nactivation_timeout = 3\nvalidation_timeout = 60\nmax_retries = 3"
 activation_timeout reserved | D/usage/15-skills.md:66 | "activation_timeout = 3       # reserved (rules are in-process, no timeout needed)"
 validation_timeout seconds | D/usage/15-skills.md:67 | "validation_timeout = 60      # seconds per script; 0 uses a one-hour timeout"
-max_retries per-skill | D/usage/15-skills.md:68 | "max_retries = 3             # per-skill failure cap; 0 disables the cap"
+max_retries per-skill | D/usage/15-skills.md:68 | "max_retries = 3              # per-skill failure cap; 0 disables the cap"
 Per-run override flag | B/octomind --help | "-c, --config <KEY=VALUE>  Override a config value for this process using a dotted path"
 -c not allowed with config subcommand | B/octomind -c skills.auto_validation=true config --validate | "Error: --config overrides cannot be used with the config or configure subcommands"
 config --validate | B/octomind config --validate | "Configuration is valid."
 
 ## Conflicts between docs and code
-semantic default threshold: doc 0.45, code 0.65 | D/usage/15-skills.md:185 | "Fires when cosine ≥ threshold (default `0.45`)."
-semantic margin: doc 0.08, code 0.06 | D/usage/15-skills.md:205 | "of **0.08** cosine over the next-best semantic candidate across the activation pool; if two skills are near-tied,"
+semantic default threshold 0.65 | S/mcp/runtime/skill.rs:73 | "pub const SEMANTIC_DEFAULT_THRESHOLD: f32 = 0.65;"
 semantic margin in code | S/mcp/runtime/skill.rs:84 | "pub const SEMANTIC_MARGIN: f32 = 0.06;"
 Generated-config comment says 0 means unlimited, code says one hour | S/../config-templates/default.toml:595 | "# Timeout in seconds for `validate` scripts. 0 = unlimited."

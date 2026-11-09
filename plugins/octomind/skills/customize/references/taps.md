@@ -94,7 +94,7 @@ Pitfalls:
 
 ## Model for one tap agent
 
-Where it goes: a sibling file such as `<data-dir>/config/taps.toml`, never `config.toml`.
+Where it goes: a sibling file such as `<data-dir>/config/taps-models.toml`, never `config.toml`. Don't confuse it with `<data-dir>/taps.toml`, which records registered taps.
 
 ```toml
 [taps]

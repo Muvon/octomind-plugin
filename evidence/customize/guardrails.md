@@ -153,3 +153,6 @@ Missing at load in code | S/config/guardrails.rs:175 | "/// Unreadable at instal
 Use OCTOMIND_SCRIPT_DIR, not $0 | D/usage/18-guardrails.md:76 | "Because `$0` points at the private copy, a script that loads files next to itself must use `$OCTOMIND_SCRIPT_DIR`"
 Scripts must be executable | D/usage/18-guardrails.md:42 | "make each file executable after saving it."
 Script path relative to workdir or absolute | S/config/guardrails.rs:269 | "fn resolve_script(workdir: &Path, script: &Path) -> PathBuf {"
+
+## Doc/code mismatch noted (not stated in the reference)
+Stale source comment says `has` lists capabilities; code compares server names | S/config/guardrails.rs:38 | "//!   has     = "filesystem-read"               # string or list of capabilities"

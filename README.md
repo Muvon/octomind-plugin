@@ -8,7 +8,7 @@ Three shared skills that teach Claude Code and Codex to set up, extend and run [
 - `octomind:cloud` — drive Octomind Cloud from outside: the Developer API (octos, conversations, routines) and the
   OpenAI-compatible hub.
 
-Each skill fires only when the request is about Octomind, so a request to add a Claude Code slash command or hook leaves them alone.
+Each skill is written to fire only on Octomind requests. In a test on 2026-11-08 with Claude Sonnet, 45 prompts run three times each picked the right skill for all 23 Octomind requests and stayed silent on all 22 near-misses, such as adding a Claude Code slash command or hook.
 
 ## Install
 

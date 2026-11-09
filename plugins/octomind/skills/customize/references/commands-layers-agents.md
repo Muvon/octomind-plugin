@@ -1,4 +1,4 @@
-# Commands, layers, agents, and prompt templates
+# Commands, agents, and prompt templates
 
 Add slash commands, sub-agent tools, and prompt shortcuts to Octomind sessions by writing small TOML files in the config directory.
 
@@ -42,27 +42,9 @@ Pitfalls:
 - `replace` and `restart` delete the conversation. Use `append` to keep it.
 - Naming a command `reduce` replaces the shipped context-compression command.
 
-## Layers (`[[layers]]`)
+## Old `[[layers]]` entries
 
-Where it goes: `<data-dir>/config/layers.toml`.
-
-```toml
-[[layers]]
-name = "analysis-stage"
-description = "Analysis stage"
-command = "octomind acp analysis"
-input_mode = "last"
-output_mode = "none"
-output_role = "assistant"
-```
-
-Required fields and values: the same as `[[commands]]`, plus `name`, `description` and `command` must be non-empty.
-
-How it activates: it does not. The docs say layers are "invoked programmatically", but the 0.70.0 code parses and validates `[[layers]]` and then nothing reads them: no `/run`, no tool, no pipeline. A layer is not a command. To run a stage, write a `[[commands]]` entry (user-triggered) or an `[[agents]]` entry (model-triggered). Multi-step pipelines belong to `octomind workflow`.
-
-How to verify: `octomind config --validate` only confirms the file parses. There is no runtime effect to observe.
-
-Pitfalls: a stage placed in `[[layers]]` does not show up in `/run` and does not run by itself.
+Do not write `[[layers]]`. No release runs it, and the key is removed after 0.70.1. Delete old entries: once the key is gone, `octomind config --validate` reports them as unknown and exits 1. To run a stage, write a `[[commands]]` entry (user-triggered) or an `[[agents]]` entry (model-triggered). Multi-step pipelines belong to `octomind workflow`.
 
 ## Agents (`[[agents]]`)
 

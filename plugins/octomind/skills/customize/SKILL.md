@@ -30,8 +30,8 @@ This skill says which one a request needs. Read the matching reference file befo
 
 Names that look alike:
 
-- `[[commands]]` creates a `/run` entry. `[[layers]]` has the same fields but does not.
-- `[[hooks]]` in the config directory are webhook listeners. `[[hook]]` in `.agents/guardrails.toml` runs scripts at session events.
+- `[[commands]]` creates a `/run` entry. `[[layers]]` does nothing: no release runs it, and it is removed after 0.70.1. Don't use it, and delete old entries.
+- `[[hooks]]` in the config directory are webhook listeners. `[[hook]]` in `.agents/guardrails.toml` runs a script after each matching tool result.
 - Octomind skills are separate from Claude Code and Codex skills, even when they share a directory such as `.agents/skills/`.
 
 ## Rules for every config change
@@ -44,11 +44,11 @@ The config directory is `<data-dir>/config/`. The data directory defaults to `~/
 - Keep root keys above the first `[table]` header, or they land inside that table.
 - Never edit `version`.
 - Never put a secret in TOML. Use `{{ENV:KEY}}` where the reference allows it and keep the value in `.env`.
-- Don't use `octomind config --model` or other setters for these edits. They rewrite `config.toml` from the merged result and drop its comments.
+- Don't use `octomind config --model` or other setters for these edits. They rewrite `config.toml` from the merged result and drop any comments.
 
 ## Finish every change
 
-1. Run `octomind config --validate` after any TOML edit in the config directory. It is the only command that reports misspelled or unknown keys; a session ignores them silently.
+1. Run `octomind config --validate` after any TOML edit in the config directory. It is the only command that reports misspelled or unknown keys; a session ignores them silently, except in `[decision]`, where an unknown key makes loading fail.
 2. Run the verify step in the reference file. `.agents/guardrails.toml` is not covered by `config --validate`.
 3. Tell the user to start a new session, because a running session keeps the settings it loaded.
 4. Give the user the path of each file you changed.

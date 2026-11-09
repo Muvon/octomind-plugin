@@ -31,7 +31,7 @@ How it activates: a defined hook listens only when the session starts with `--ho
 printf '%s\n' 'Wait for build events.' | octomind run --name ci-watcher --daemon --format jsonl --hook build-events
 ```
 
-- `octomind run` is the only command that starts listeners. `octomind acp` accepts `--hook` and then ignores it. `octomind server` rejects it (`unexpected argument '--hook'`).
+- `octomind run` is the only command that starts listeners. `octomind acp` and `octomind server` reject the flag (`unexpected argument '--hook'`).
 - The listener lives as long as the `run` process. Without `--daemon`, a non-interactive run exits once it has no pending work. With piped stdin the first prompt must be non-empty, or startup fails with `No input provided via stdin`.
 
 How to verify: `octomind config --validate` checks names, bind addresses and timeouts, not the script file. At startup an unknown name, a missing script, or a script without the execute bit aborts the session. With the session running, from another terminal: `curl -i -X POST http://127.0.0.1:9876/ --data 'Build 42 passed'` must return `200` and `ok`; in `--format jsonl` output look for an `injected` record with `"source_kind":"webhook"`.

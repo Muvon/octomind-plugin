@@ -49,11 +49,11 @@ Rejected check | S/session/chat/session/setup.rs:96 | "if !config.has_role(&role
 Config role wins over manifest role | S/config/loading.rs:674 | "// Concatenate roles (additive, skip duplicates by name)"
 Skip when name exists | S/config/loading.rs:684 | "if !existing_names.contains(name) {"
 Docs state base wins | D/usage/06-roles.md:328 | "role already defined in your base config, the **base (config) role wins** and the manifest's same-named role is"
-Local role named like a tag can block resolution | D/usage/06-roles.md:331 | "resolution when the merge skips it. Use a unique plain name for a local customization; a local `developer`"
+Local role named like a tag can block resolution | D/usage/06-roles.md:332 | "resolution when the merge skips it. Use a unique plain name for a local customization; a local `developer`"
 Tag injected as first role name | S/agent/resolver.rs:72 | "// Always inject the tag as the role name — manifests never need to declare it."
 Needs a new role | S/agent/resolver.rs:86 | "\"Agent manifest for '{tag}' must define at least one new [[roles]] entry\""
 Tools beyond server_refs | D/usage/06-roles.md:349 | "**Why are tools present with empty `server_refs`?** Check auto-bind, the interactive `schedule`/`monitor` addition,"
-Project tools added | D/usage/06-roles.md:183 | "when the session has MCP servers. Inspect `/mcp list` after activation or role changes."
+Project tools added | D/usage/06-roles.md:184 | "when the session has MCP servers. Inspect `/mcp list` after activation or role changes."
 auto_bind adds server | D/usage/06-roles.md:125 | "Empty `server_refs` removes explicit grants, but exact-match `auto_bind` servers still join the role."
 
 ## Model profile
@@ -65,7 +65,7 @@ top_k range | D/usage/06-roles.md:98 | "- `top_k` — `0` to `1000` (`0` disable
 Range error text | T | "Error: roles.bad.temperature must be between 0.0 and 2.0, got: 3.5"
 Precedence | D/usage/06-roles.md:104 | "runtime override  >  role model profile  >  tap name mapping  >  [model]"
 CLI --model first | S/cli (octomind run --help) | "Priority: CLI --model > role.model > config.model"
-Model names `provider:model` | D/usage/06-roles.md:289 | (workflows doc) "use `provider:model` format (e.g. `anthropic:claude-sonnet-4-6`)" — D/usage/09-workflows.md:289
+Model names `provider:model` | D/usage/09-workflows.md:289 | "use `provider:model` format (e.g. `anthropic:claude-sonnet-4-6`)"
 Foreign-provider model validates without credential | T | role `helper` with `name = "openai:gpt-5.6-luna"`: "Configuration is valid."
 
 ## Tap model mapping

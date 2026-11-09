@@ -23,7 +23,7 @@ Script is run directly, not through a shell | D/09:97 | "Executable file path; i
 Same in code | S/session/webhook_listener.rs:224 | "let mut cmd = Command::new(script_path);"
 Relative script path resolves from the launch directory | D/03:119-120 | "Relative script paths resolve from" / "the process launch directory; use an absolute path for service deployments."
 Only POST runs the script, others get 405 | S/session/webhook_listener.rs:180-181 | "if req.method() != hyper::Method::POST {" / "return Ok(response(StatusCode::METHOD_NOT_ALLOWED, \"Only POST allowed\\n\"));"
-Body arrives on stdin | D/03:174 | "| **stdin** | Raw HTTP body |"
+Body arrives on stdin | D/03:174 | "| **stdin** | Raw HTTP request body |"
 Exit 0 with non-empty stdout injects trimmed stdout, answers 200 `ok` | S/session/webhook_listener.rs:277,300 | "let content = String::from_utf8_lossy(&output.stdout).trim().to_string();" ; "Ok(response(StatusCode::OK, \"ok\\n\"))"
 Injected as a user message | D/03:180-181 | "stdout is **trimmed** (leading/trailing whitespace stripped) and injected as a user message."
 Empty stdout is 204, nothing injected | S/session/webhook_listener.rs:278-280 | "if content.is_empty() {" / "return Ok(response(StatusCode::NO_CONTENT, \"\"));"
@@ -40,17 +40,16 @@ Listeners start only with `--hook <NAME>`, repeatable | D/03:19 | "| `--hook <NA
 `run` starts listeners for each `--hook` | S/session/chat/session/main_loop.rs:173-181 | "for hook_name in &args.hooks {" / "crate::session::webhook_listener::start_webhook_listener(session_name, hook_config, addr, script_path)"
 Listeners start for interactive and non-interactive runs | D/09:109 | "Hook listeners start for both interactive and non-interactive `octomind run` sessions and stop when the session ends."
 Listener started by `init_session_runtime`, called in the run paths | S/session/chat/session/main_loop.rs:83,263,1471 | "let webhooks = start_webhook_guards(args, config, &chat_session.session.info.name).await?;" ; "let mut runtime_guards = init_session_runtime(args, config, &chat_session, &role).await?;" ; "let _runtime_guards = init_session_runtime(args, config, &chat_session, &role).await?;"
-`acp` accepts `--hook` | S/commands/acp.rs:48-51 | "/// Activate a webhook hook by name (defined in [[hooks]] config)." / "pub hooks: Vec<String>,"
-`acp` forwards the names but the ACP session path never calls `init_session_runtime` | S/acp/agent.rs:367,1097-1099 | "hooks: self.hooks.clone()," ; "crate::session::context::init_session_services(&role_for_pool);" (no call to `init_session_runtime` or `start_webhook_guards` in `src/acp/`)
-Docs agree: `acp` accepts the flag, starts no listener | D/03:56-57 | "accepts a `--hook` flag but does not start a webhook listener from it, and it exposes no `octomind send` socket."
+`acp` has no `--hook` (flag removed after commit 25f9ae4e; working tree of 2026-11-09) | S/commands/acp.rs:19-47 | "pub sandbox: bool," is the last field of `AcpArgs`
+Docs agree: `acp` has no flag | D/03:56-57 | "has no `--hook` flag and exposes no `octomind send` socket."
 `server` has no `--hook` | D/03:53-54 | "over the WebSocket connection; there is no inject socket and no `--hook` support."
 `server` rejects the flag, confirmed | T | `octomind server --hook x` printed "error: unexpected argument '--hook' found"
-`acp` lists the flag in its help, confirmed | T | `octomind acp --help` printed "--hook <NAME>         Activate a webhook hook by name (defined in [[hooks]] config)."
+`acp` rejects the flag, confirmed on a build of the 2026-11-09 working tree | T | `octomind acp --hook x` printed "error: unexpected argument '--hook' found"
 `--daemon` keeps the run alive; without it a non-interactive run exits when idle | D/03:44-45 | "Without `--daemon`, a non-interactive run still waits for pending schedules, monitors, agents, detached shell jobs, and" / "tap runs; it exits once that work is exhausted."
 Piped first prompt must be non-empty | S/commands/run.rs:177 | "anyhow::bail!(\"No input provided via stdin\");"
 `--name` is how you choose the session name | D/03:16 | "Provide a stable name if you want to inject messages with `octomind send`."
 Verify with curl, expect 200 and `ok` | D/09:59 | "Expect HTTP `200` with body `ok`."
-jsonl output shows an `injected` record from the webhook | D/09:129-131 | "\"type\": \"injected\"," / "\"source_kind\": \"webhook\","
+jsonl output shows an `injected` record from the webhook | D/09:129-130 | "\"type\": \"injected\"," / "\"source_kind\": \"webhook\","
 
 ## `octomind send`
 Arguments: `--name`, message or stdin | S/commands/send.rs:31-36 | "pub name: String," / "pub message: Option<String>,"
@@ -95,5 +94,4 @@ Idle repeat is an autonomous loop | D/07s:206-207 | "It can fire again after its
 
 ## Doc and code conflicts and open items
 Doc status table omits 413; code returns it | D/09:559-566 | "| Body could not be read | `400 Bad Request` | no |" (no 413 row; code: S/session/webhook_listener.rs:212)
-The note that `--hook` is unavailable on `server`/`acp` is exact only for `server`; `acp` parses the flag and ignores it | D/03:56-57 | "accepts a `--hook` flag but does not start a webhook listener from it" (matches code S/commands/acp.rs:48-51 and the missing `init_session_runtime` call in `src/acp/`)
 Not exercised: a live hook listener, `octomind send` to a live session, and a `schedule` firing. Each needs a running session and a model turn.

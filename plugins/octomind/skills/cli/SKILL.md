@@ -61,12 +61,12 @@ octomind --version && octomind config --show
 
 What happens on load, for every command including `--show` and `--validate`:
 
-- No config directory, or no `*.toml` in it: Octomind writes the full default template.
+- No config directory, or no `*.toml` in it: Octomind writes a complete default `config.toml`, without the template's comments. A first interactive `run` opens `octomind configure` first.
 - `config.toml` has an older `version` than the binary's template: Octomind migrates that file, writes a backup and prints its path to stderr. Runs with
   `-c` skip the migration. Sibling files are never migrated.
 - A missing required key is never filled in from the template. Loading fails with `All required fields must be present`. Don't delete keys from `config.toml`;
   override them in a sibling file. Files must collectively supply every required key, so a directory holding only sibling files is not upgraded and can stop loading after a release.
-- An unknown or misspelled key is ignored when a session loads. Only `octomind config --validate` reports it, so run that after every edit.
+- An unknown or misspelled key is ignored when a session loads, and only `octomind config --validate` reports it, so run that after every edit. The exception is `[decision]`, where an unknown key makes loading fail.
 - One-off override, nothing saved: `printf '%s\n' 'Reply with OK.' | octomind run --format plain -c log_level=debug -c supervisor.enabled=false`. The dotted path must
   already exist in the merged config (`Unknown config override path` otherwise), and `-c` is rejected on `config` and `configure`.
 - Do not touch `version`. Root keys must sit before the first `[table]` header, or they land inside that table.
@@ -75,7 +75,7 @@ What writes where:
 
 | Action | What it changes |
 |---|---|
-| `octomind config --model`, `--log-level`, `--markdown-theme`, `--markdown-enable`, `--mcp-server` | Rewrites `config.toml` from the whole merged config |
+| `octomind config --model`, `--log-level`, `--markdown-theme`, `--markdown-enable`, `--system`, `--mcp-server` | Rewrites `config.toml` from the whole merged config |
 | `octomind config --mcp-providers` | Same rewrite, and REPLACES the whole server list |
 | `octomind configure` | The three model names in `config.toml`; keys in `.env` |
 | `octomind login` | `OCTOHUB_API_KEY` in `.env`, account session in `auth.json` |
@@ -150,7 +150,7 @@ stdin or running steps. A real run writes progress to stderr, and stdout stays e
 - `octomind vars [--preview | --expand]` shows the placeholders and their values.
 - `octomind server [TAG] [--host H] [-p PORT] [--sandbox] [--allow-origin URL]` starts the WebSocket server, by default on `127.0.0.1:8080`. It has no TLS and no
   authentication unless `OCTOMIND_SERVER_TOKEN` is set.
-- `octomind acp [TAG] [-n NAME] [-r SESSION] [--resume-recent] [-m MODEL] [--sandbox] [--hook NAME]` runs an ACP agent over stdio for editors.
+- `octomind acp [TAG] [-n NAME] [-r SESSION] [--resume-recent] [-m MODEL] [--sandbox]` runs an ACP agent over stdio for editors.
 - `octomind completion <bash|zsh|fish|powershell|elvish>` prints a shell completion script.
 
 ## Pitfalls

@@ -45,6 +45,7 @@ Command shipped as `reduce` | D/reference/03-config-reference.md:393 | "The temp
 `replace` removes the conversation | D/usage/10-commands-and-layers.md:292-294 | "**Why did replace remove my conversation?** `output_mode = \"replace\"` keeps the first system message, rebuilds"
 
 ## Layers
+Rows below describe 0.70.0 (commit 25f9ae4e). The field, its validation and `LayersConfig` were removed from the Octomind source after 0.70.1.
 Empty name, description or command is rejected | S/config/validation.rs:196-216 | "return Err(anyhow!(\"Layer at index {} has empty name\", index));"
 Empty command rejected, confirmed | T | "Error: Layer 'e' at index 1 has empty command. Layers now execute via ACP protocol"
 Docs: layers are invoked programmatically | D/usage/10-commands-and-layers.md:25 | "- **Layers** — orchestration stages invoked programmatically (`[[layers]]`)."

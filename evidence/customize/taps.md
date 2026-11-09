@@ -7,7 +7,7 @@ claim | source | verbatim quote
 
 ## Tap
 Registration stored in taps.toml under data dir | D/integration/04-tap-system.md:519 | "Tap registrations are stored in `taps.toml`; `[taps]` in"
-Clone dir is taps/<user>/octomind-<repo> | D/integration/04-tap-system.md:520 | "lives at `taps/<user>/octomind-<repo>/`"
+Clone dir is taps/<user>/octomind-<repo> | D/integration/04-tap-system.md:521 | "lives at `taps/<user>/octomind-<repo>/`"
 Local taps are symlinks at that path | S/agent/taps.rs:84 | "Local taps:  `~/.local/share/octomind/taps/user/octomind-repo/` (symlink → local path)"
 Data dir is OCTOMIND_DATA_DIR when set | D/integration/04-tap-system.md:518 | "`OCTOMIND_DATA_DIR` when set, otherwise `~/.local/share/octomind`"
 Add GitHub tap and local tap commands | D/integration/04-tap-system.md:19 | "octomind tap myorg/my-agents"
@@ -27,13 +27,13 @@ Local taps are live | D/integration/04-tap-system.md:533 | "Local taps are live 
 Listing user taps | S/commands/tap.rs:26 | "Tap to add in `user/repo` format. Omit to list all active taps."
 Tag list for completion comes from tap files, no network | S/agent/taps.rs:265 | "Uses only locally cached tap data — no network calls."
 Untap removes registration and local symlink only | D/integration/04-tap-system.md:33 | "Removing a local tap deletes its registration and symlink, preserving the source directory."
-GitHub clone stays | D/integration/04-tap-system.md:34 | "Removing a GitHub tap leaves"
+GitHub clone stays | D/integration/04-tap-system.md:33 | "Removing a GitHub tap leaves"
 Untap does not clear manifest cache | D/integration/04-tap-system.md:34 | "Neither operation clears the separate agent manifest cache."
 Remote repo must be named octomind-<repo> | D/integration/04-tap-system.md:65 | "Remote installation expects a repository named"
 Example mapping myorg/my-agents to octomind-my-agents | D/integration/04-tap-system.md:66 | "for `myorg/my-agents`, that is `myorg/octomind-my-agents`."
 Publish: public repo with agents path, install by tap command | D/use-cases/16-build-and-share-a-specialist-agent.md:154 | "create a repository named exactly `octomind-release-kit` under the account entered in step 1."
 Publish: public repo and install command | D/use-cases/16-build-and-share-a-specialist-agent.md:159 | "Use a public repository for this example."
-Other folders in a tap | D/integration/04-tap-system.md:113 | "`deps/`, `skills/`, `capabilities/`, `workflows/`, and `plugins/`"
+Other folders in a tap | D/integration/04-tap-system.md:114 | "`deps/`, `skills/`, `capabilities/`, `workflows/`, and `plugins/`"
 Tap layout agents/category/variant.toml | D/integration/04-tap-system.md:90 | "agents/"
 Workflows in tap read from workflows/<name>.toml | S/agent/taps.rs:317 | "Reads `<tap>/workflows/<name>.toml`, first tap wins"
 
@@ -48,7 +48,7 @@ Role name overwritten with tag | S/agent/resolver.rs:114 | "table.insert(\"name\
 Only first role renamed | S/agent/resolver.rs:113 | "if let Some(toml::Value::Table(table)) = roles.first_mut() {"
 Need at least one roles entry | S/agent/resolver.rs:86 | "must define at least one new [[roles]] entry"
 capabilities is a top-level array | S/agent/registry.rs:860 | "let cap_names: Vec<String> = match value.get(\"capabilities\") {"
-Top level, before tables | D/integration/04-tap-system.md:339 | "Put capability"
+Top level, before tables | D/integration/04-tap-system.md:338 | "Put capability"
 Bare name: agent's own tap first, then others | S/agent/registry.rs:757 | "Unprefixed: agent's own tap first so a tap always wins for its own"
 octomind/ prefix pins baseline tap | S/agent/registry.rs:786 | "let root = if prefix == BASELINE_TAP_PREFIX {"
 org/ prefix pins first tap with that owner | S/agent/registry.rs:796 | ".find(|tap| tap.name.split('/').next() == Some(prefix))"
@@ -99,7 +99,7 @@ git init | S/agent/tap_scaffold.rs:198 | ".args([\"init\", \"--quiet\"])"
 Registered as local tap | S/agent/tap_scaffold.rs:211 | "taps::add_tap(&format!(\"{} {}\", tap_id, abs.display()))?;"
 Output rows name, dir, agent, next | S/commands/tap.rs:69 | "key_width([\"name\", \"dir\", \"agent\", \"next\"])"
 Validator may need Python 3.11 and bash | D/use-cases/16-build-and-share-a-specialist-agent.md:31 | "require Bash and Python with TOML support."
-Python 3.11 or later | D/use-cases/16-build-and-share-a-specialist-agent.md:36 | "Use Python 3.11 or later for that check."
+Python 3.11 or later | D/use-cases/16-build-and-share-a-specialist-agent.md:39 | "Use Python 3.11 or later for that check."
 
 ## Model for one tap agent
 [taps] maps tag to model | S/config/mod.rs:452 | "// Example: taps = { \"developer:general\" = \"ollama:glm-5\" }"

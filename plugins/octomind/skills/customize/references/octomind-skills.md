@@ -74,7 +74,7 @@ exit 1
 
 Required fields and allowed values: it receives the literal first argument `assistant`, the final assistant message on stdin, and runs in the project directory. Exit 0 means valid. It sends feedback to the model only if it exits non-zero and writes something (stderr, or stdout when stderr is empty). A silent non-zero exit does nothing.
 
-How it activates: runs at the end of a turn for active skills, only when `[skills].auto_validation = true`. After `max_retries` failures in a row for one skill it stops running until the skill passes once or a new session starts; `max_retries = 0` removes the cap. It is killed after `validation_timeout` seconds (0 means one hour). Timeouts and spawn errors are only debug-logged.
+How it activates: runs at the end of a turn for active skills, only when `[skills].auto_validation = true`. After `max_retries` failures in a row for one skill it stops running until a new session starts; `max_retries = 0` removes the cap. It is killed after `validation_timeout` seconds (0 means one hour). Timeouts and spawn errors are only debug-logged.
 
 How to verify: `printf 'text' | <tap>/skills/<name>/validate assistant; echo $?`. Then register the tap, set `auto_validation = true`, and start `OCTOMIND_SKILLS=<name> octomind run developer:general`.
 
@@ -106,7 +106,7 @@ Pitfalls: typing `/skill <name>` twice unloads the skill.
 
 ## [skills] settings
 
-Where it goes: the `[skills]` table in the Octomind config file, which `octomind config` creates with all five keys. Edit the existing table. For one run only, put `-c skills.auto_validation=true` before `run`, as in `octomind -c skills.auto_validation=true run developer:general`.
+Where it goes: a `[skills]` table in a sibling file such as `<data-dir>/config/settings.toml`, holding only the keys you change. For one run only, put `-c skills.auto_validation=true` before `run`, as in `octomind -c skills.auto_validation=true run developer:general`.
 
 Minimal valid example:
 
